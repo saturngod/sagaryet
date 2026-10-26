@@ -122,7 +122,7 @@ builds and uploads native installers:
 
 | Platform | Architecture | Installers |
 |---|---|---|
-| macOS | Apple Silicon and Intel | DMG |
+| macOS | Apple Silicon (M1 and newer) | DMG |
 | Windows | x64 | NSIS EXE and MSI |
 | Linux (Ubuntu 22.04) | x64 | DEB and AppImage |
 
