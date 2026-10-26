@@ -38,12 +38,8 @@ jobs:
       - name: Check frontend
         run: bun run build
 
-  desktop-verification:
-    needs: validate
-    uses: ./.github/workflows/verify.yml
-
   prepare-release:
-    needs: [validate, desktop-verification]
+    needs: validate
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -107,9 +103,14 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt
+          components: rustfmt, clippy
           # Apple targets are only needed on macOS runners.
           targets: ${{ matrix.target }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
@@ -125,6 +126,9 @@ jobs:
       - name: Install frontend dependencies
         run: bun install --frozen-lockfile
 
+      - name: Test Python scripts
+        run: python -m unittest discover -s tests -v
+
       - name: Check Rust formatting
         working-directory: src-tauri
         run: cargo fmt --check
@@ -132,6 +136,10 @@ jobs:
       - name: Test Rust services and HTTP server
         working-directory: src-tauri
         run: cargo test --locked
+
+      - name: Check Rust with Clippy
+        working-directory: src-tauri
+        run: cargo clippy --locked --target ${{ matrix.target }} --all-targets -- -D warnings
 
       - name: Build and upload Tauri app to draft
         uses: tauri-apps/tauri-action@v0
