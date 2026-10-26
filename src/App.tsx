@@ -6,7 +6,7 @@ type Model = { id: string; name: string; provider: string; canServe: boolean };
 type Catalog = { models: Model[]; warnings: string[] };
 type Provider = { id: string; name: string; runnable: boolean; authentication: string };
 type Status = { running: boolean; baseUrl: string | null; accessKey: string | null; provider: string; model: string; lanUrls: string[] };
-const cliOptions = [["codex", "Codex"], ["claude", "Claude Code"], ["agy", "AGY"], ["qoder", "Qoder"]] as const;
+const cliOptions = [["codex", "Codex"], ["claude", "Claude Code"], ["qoder", "Qoder"]] as const;
 
 function App() {
   const [status, setStatus] = useState<Status>({ running: false, baseUrl: null, accessKey: null, provider: "codex", model: "", lanUrls: [] });

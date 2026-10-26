@@ -1,14 +1,16 @@
-**Sagaryet will be a separate desktop app that turns an installed AI CLI into an OpenAI-compatible server.** You select Codex, Claude Code, AGY, or Qoder, start the server, and enter Sagaryet’s URL and access key into your mobile AI app.
+**Sagaryet will be a separate desktop app that turns an installed AI CLI into an OpenAI-compatible server.** You select Codex, Claude Code, or Qoder, start the server, and enter Sagaryet’s URL and access key into your mobile AI app.
+
+AGY support was removed on 2026-10-26 at the project owner’s request due to terms-of-service concerns. It is outside the implementation and release scope.
 
 Implementation status — October 25, 2026: **in progress; localhost and LAN address display development slice implemented**. No Sagar files were changed.
 
 | Milestone | Current status | Remaining acceptance gates |
 |---|---|---|
-| 0 — Feasibility | All four installations and catalogs checked; Codex and Qoder live requests passed; login checks separated from generation | AGY safe text-only configuration; Claude live authentication; all-provider adversarial isolation/stream/history/cancel checks |
+| 0 — Feasibility | All three supported installations and catalogs checked; Codex and Qoder live requests passed; login checks separated from generation | Claude live authentication; all-provider adversarial isolation/stream/history/cancel checks |
 | 1 — Foundation | Tauri controls, authenticated Rust API, versioned UI preferences, shared bounded process execution and event contract, synthetic internal fixtures, bounded queue | OS credential-store integration; production connection limits |
 | 2 — First real CLI | Codex App Server adapter, ephemeral config/thread, buffered and SSE translation, role/history serialization; real HTTP history test passed | Adversarial tool/extension checks and full installed-provider cancellation/error matrix |
 | 3 — Mobile access | LAN binding, local IPv4 discovery, dual address display and unencrypted-transport disclosure implemented | Verified isolation for LAN, real phone/client checks |
-| 4 — Other adapters | Claude and Qoder adapters implemented; Qoder live test passed with isolated config; AGY models visible but generation disabled | Claude authentication failure; AGY safe adapter; remaining full contract/live matrix |
+| 4 — Other adapters | Claude and Qoder adapters implemented; Qoder live test passed with isolated config | Claude authentication failure; remaining full contract/live matrix |
 | 5 — Reliability | One active/four queued, queue/generation deadlines, bounded events/output, rate limit, Cancel/Stop/disconnect cleanup, process-group tests | Connection caps; slow-client/OS shutdown stress tests; Windows process-tree verification |
 | 6 — Release | macOS release binary/app bundle built; native discovery/picker inspected; CI matrix added | Signed packages, remote Windows/Linux jobs, actual mobile-client compatibility matrix |
 
@@ -56,7 +58,7 @@ The first release should provide:
 | Feature | Initial scope |
 |---|---|
 | Desktop systems | macOS, Windows, Linux |
-| CLI providers | Codex, Claude Code, AGY, Qoder |
+| CLI providers | Codex, Claude Code, Qoder |
 | Active provider | One selected CLI at a time |
 | Client interface | OpenAI-compatible Chat Completions |
 | Responses | Streaming and non-streaming text |
@@ -81,11 +83,9 @@ flowchart LR
     Q --> R[CLI router]
     R --> C[Codex adapter]
     R --> A[Claude Code adapter]
-    R --> G[AGY adapter]
     R --> D[Qoder adapter]
     C --> E[Normalized response events]
     A --> E
-    G --> E
     D --> E
     E --> S[OpenAI response / SSE encoder]
     S --> M
@@ -118,10 +118,9 @@ Each provider needs a dedicated adapter because its command flags, event formats
 |---|---|---|
 | Codex | App Server over local stdio | Initialization, text deltas, terminal completion, tool denial, cancellation |
 | Claude Code | Headless structured streaming | Partial text events, result reconciliation, tools/settings isolation |
-| AGY | Headless `stream-json` | Installed-version event format, terminal status, safe execution configuration |
 | Qoder | Headless `stream-json` | Executable aliases, model discovery, partial events, quota errors |
 
-Codex documents an App Server protocol for embedding its agent capabilities. Claude Code, AGY, and Qoder document programmatic or headless execution with structured output. These are suitable starting points, but each adapter still needs installed-version testing. Sources: [Codex App Server](https://learn.chatgpt.com/docs/app-server), [Claude Code programmatic usage](https://code.claude.com/docs/en/headless), [AGY headless mode](https://www.antigravity.google/docs/cli/headless/), [Qoder scripting](https://docs.qoder.com/cli/run-in-scripts).
+Codex documents an App Server protocol for embedding its agent capabilities. Claude Code and Qoder document programmatic or headless execution with structured output. These are suitable starting points, but each adapter still needs installed-version testing. Sources: [Codex App Server](https://learn.chatgpt.com/docs/app-server), [Claude Code programmatic usage](https://code.claude.com/docs/en/headless), [Qoder scripting](https://docs.qoder.com/cli/run-in-scripts).
 
 Define one internal adapter contract:
 
@@ -370,7 +369,7 @@ Sagar’s current plan also records that successful live Qoder generation remain
 | 1 — Separate foundation | Create Sagaryet repository, Tauri shell, configuration, Rust server, fake adapter | Start/stop works; random port works; authenticated HTTP and synthetic streaming pass |
 | 2 — First real CLI | Add Codex adapter and text-chat conversion | Streaming, non-streaming, multi-turn context, cancellation, and errors work end to end |
 | 3 — Mobile access | Add LAN mode, addresses, key controls, connection guide | A real phone discovers models and receives streamed text |
-| 4 — Remaining adapters | Add Claude Code, AGY, and Qoder | Each passes the same contract suite and a successful live synthetic request |
+| 4 — Remaining adapters | Add Claude Code and Qoder | Each passes the same contract suite and a successful live synthetic request |
 | 5 — Reliability | Add bounded queue, timeouts, backpressure, shutdown and process cleanup | Disconnects, quota failures, hangs, and concurrent clients leave no orphan processes |
 | 6 — Release | Package for three desktop systems; test selected mobile clients | Publish verified OS/CLI/client combinations and known limitations |
 
@@ -396,4 +395,4 @@ Before release, verify:
 
 Document provider-account restrictions and supported automation usage before distribution. Using a CLI does not establish unlimited usage or permission to redistribute account access.
 
-**Next acceptance work:** establish complete tool/hook/plugin isolation for every enabled adapter (AGY remains generation-disabled), restore Claude live authentication, then validate the Codex → phone → streamed response → cancel slice on a real phone. Finish all-provider contract and cross-platform release verification before marking milestones 0–6 complete.
+**Next acceptance work:** establish complete tool/hook/plugin isolation for every enabled adapter, restore Claude live authentication, then validate the Codex → phone → streamed response → cancel slice on a real phone. Finish all-provider contract and cross-platform release verification before marking milestones 0–6 complete.

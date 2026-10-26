@@ -32,7 +32,6 @@
     }
   },
   "unverified": [
-    "AGY text-only isolation",
     "adversarial hooks/plugins/tool tests",
     "LAN and real phone",
     "Windows and Linux builds",
@@ -55,5 +54,11 @@
     "native_ui": "passed_launch_discovery_layout_and_four_provider_picker",
     "terminal_all_cli_checks": "passed_all_four_runnable_codex_claude_qoder_login_detected_agy_auth_unknown",
     "native_cli_overview": "passed_all_four_runnable_login_states_and_model_counts_visible"
+  },
+  "provider_scope_update": {
+    "date": "2026-10-26",
+    "removed_provider": "agy",
+    "reason": "Removed at project owner request due to terms-of-service concerns",
+    "historical_evidence": "Provider and check results above predate removal; they are not verification of the current three-provider build."
   }
 }

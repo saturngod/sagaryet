@@ -78,11 +78,10 @@ async fn check(id: &str, name: &str) -> Provider {
     result
 }
 pub async fn list() -> Vec<Provider> {
-    let (a, b, c, d) = tokio::join!(
+    let (a, b, c) = tokio::join!(
         check("codex", "Codex"),
         check("claude", "Claude Code"),
-        check("agy", "AGY"),
         check("qoder", "Qoder")
     );
-    vec![a, b, c, d]
+    vec![a, b, c]
 }

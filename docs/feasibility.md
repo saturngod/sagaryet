@@ -2,7 +2,9 @@
 
 Status: **in progress; no real provider is approved for LAN use**.
 
-## Current implementation evidence
+AGY was removed from the supported providers on 2026-10-26 at the project owner’s request due to terms-of-service concerns. AGY references below record earlier investigation only; no AGY work remains planned.
+
+## Historical implementation evidence
 
 The Rust adapters now discover all four installed catalogs (Codex 7, Claude 5,
 AGY 6, Qoder 15). Codex live generation and HTTP multi-turn history passed.
@@ -11,8 +13,8 @@ auth files. A follow-up on 2026-10-26 enabled the hidden
 `--include-partial-messages` flag and verified 276 text events: first text at
 7.599 seconds, completion at 10.257 seconds (Qoder CLI 1.1.78).
 Claude reports configured login, but its live adapter returned
-`authentication_required`. AGY generation remains disabled because complete
-tool/extension isolation is not established for the installed CLI. Qoder 1.1.78
+`authentication_required`. AGY generation was disabled because complete
+tool/extension isolation had not been established for the installed CLI. Qoder 1.1.78
 also supports `status --output json`; its `logged_in` boolean is now used rather
 than assuming an undocumented auth subcommand.
 

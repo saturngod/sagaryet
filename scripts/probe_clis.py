@@ -13,7 +13,7 @@ import threading
 import time
 
 LIMIT = 1024 * 1024
-PROVIDERS = {"codex": ["codex"], "claude": ["claude"], "agy": ["agy"],
+PROVIDERS = {"codex": ["codex"], "claude": ["claude"],
              "qoder": ["qodercli", "qoder"]}
 
 

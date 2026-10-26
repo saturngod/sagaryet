@@ -5,10 +5,10 @@ A desktop bridge for OpenAI-compatible text chat through installed AI CLIs.
 
 ## Run
 
-Requires Bun, Rust, and the platform prerequisites for Tauri 2.
+Requires Bun (CI uses 1.3.0), Rust stable with Cargo, and the platform prerequisites for Tauri 2. Install and sign in to at least one supported AI CLI separately; Sagaryet uses that CLI’s account for generation. The optional API key below protects access to Sagaryet and is not a provider credential.
 
 ```sh
-bun install
+bun install --frozen-lockfile
 bun run tauri dev
 ```
 
@@ -37,15 +37,15 @@ This command uses your terminal PATH and prints sanitized JSON. The desktop
 checker also searches common per-user installation directories. Neither checker
 confuses a configured login with a successful AI response.
 
-## Provider support verified on this Mac
+## Provider support and recorded verification
 
 | Provider | Discovery | Login check | Generation |
 |---|---|---|---|
 | Codex | 7 models; native effort metadata | `login status` | Live adapter and HTTP multi-turn check passed |
 | Claude Code | 5 models; native effort metadata | `auth status` JSON | Adapter implemented; live check returned authentication failure |
-| AGY | 6 models from `agy models` | Unknown | Disabled: complete tool/extension isolation not established |
 | Qoder | 15 models; native effort metadata | `status --output json` | Live check passed; incremental text streaming |
 
+These are recorded development results, not checks performed on your machine.
 Counts and account availability can change. A successful connection test applies
 to the tested model at that time. It does not guarantee future access.
 
@@ -56,7 +56,8 @@ an isolated config root with only auth files copied, empty tools/MCP and no
 session persistence. Temporary auth copies are removed when execution ends.
 All adapters remain subject to the isolation checks described here; LAN access is
 enabled and unencrypted, so set an access key before exposing the server to a network.
-AGY discovery does not run generation or load a chat agent.
+
+AGY support has been removed at the project owner’s request due to terms-of-service concerns.
 
 ## API compatibility
 
@@ -80,7 +81,7 @@ AGY discovery does not run generation or load a chat agent.
 | Rate limit | 60 authenticated requests/minute across clients |
 | Browser access | Origin-bearing requests rejected; no CORS allowance |
 | Network | `0.0.0.0` (this computer and local IPv4); Host must match localhost, 127.0.0.1, or a current local IPv4 address plus the server port |
-| Cancellation | Disconnect, desktop Cancel, Stop, timeout and app teardown clean up execution |
+| Cancellation | Disconnect, Stop server, timeout and app teardown clean up execution |
 
 ```sh
 curl http://127.0.0.1:PORT/v1/chat/completions \
@@ -94,12 +95,39 @@ the server cancels active and waiting requests. There are no HTTP
 administration endpoints. Raw provider diagnostics and private reasoning are
 not returned to clients.
 
+## Development
+
+The desktop app uses React 19, TypeScript and Vite for the UI, with Tauri 2,
+Rust, Tokio and Axum for CLI execution and the embedded HTTP server.
+`bun run dev` starts only the frontend at port 1420; use `bun run tauri dev`
+for working desktop commands.
+
+| Location | Responsibility |
+|---|---|
+| `src/App.tsx`, `src/App.css` | Server setup, connection details and model list |
+| `src-tauri/src/lib.rs` | Tauri commands and application lifecycle |
+| `src-tauri/src/server.rs` | HTTP routes, validation, authentication, queues and streaming |
+| `src-tauri/src/adapter.rs` | Provider generation adapters and isolation |
+| `src-tauri/src/catalog.rs`, `providers.rs` | Model discovery and CLI login checks |
+| `src-tauri/src/process.rs` | Executable discovery, bounded child I/O and process cleanup |
+| `scripts/`, `tests/` | CLI probes, release tooling and Python tests |
+| `script/build_and_run.sh` | macOS debug app build and launch helper |
+
+On macOS, `./script/build_and_run.sh` builds a debug app bundle and launches it.
+It stops any existing `sagaryet` process first. Use `--debug` for LLDB, `--logs`
+for process logs, `--telemetry` for subsystem logs, or `--verify` for a launch
+check. These helper modes are macOS-specific.
+
+Contributor and coding-agent guidance is in [AGENTS.md](AGENTS.md).
+
 ## Verify
 
 ```sh
 bun run build
 bun run test
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+bun run version:check
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings
 bun run tauri build --no-bundle
 # Installed discovery, no inference:
 cargo test --manifest-path src-tauri/Cargo.toml installed_all_catalogs -- --ignored --nocapture
@@ -115,10 +143,12 @@ See [plan](plan.md), [feasibility](docs/feasibility.md), and
 [verification evidence](docs/implementation-verification.json). GitHub Actions
 runs verification and installer builds only when a version tag matching `v*`
 is pushed (for example, `v0.1.0`). Branch pushes, pull requests, and manual events
-do not start builds. The verification workflow is reusable and called by the
-release workflow after the tag version passes validation. It tests real HTTP sockets (health, authentication, JSON/SSE,
-queueing, cancellation, and stop/restart) without installed provider CLIs, then
-builds and uploads native installers:
+do not start builds. The [release workflow](.github/workflows/release.yml) validates the tag version
+and frontend build, then creates or reuses a draft release. Each platform job
+runs Python tests, Rust formatting, Rust tests, and Clippy before building and
+uploading its installers. Rust tests exercise real HTTP sockets (health,
+authentication, JSON/SSE, queueing, cancellation, and stop/restart) without
+installed provider CLIs:
 
 | Platform | Architecture | Installers |
 |---|---|---|
@@ -134,7 +164,7 @@ Allow the app through the OS firewall for LAN clients; localhost needs no LAN ru
 Remote Windows/Linux results still need to be confirmed by running GitHub Actions.
 Windows batch-only CLI shims are currently rejected; a native executable is required.
 
-Remaining release gates include AGY generation isolation, restoring Claude live
+Remaining release gates include restoring Claude live
 authentication, adversarial tool/hook/extension checks, LAN isolation and phone
 streaming verification, OS credential-store integration, packaged
 signing/notarization and verified Windows/Linux/mobile-client combinations.

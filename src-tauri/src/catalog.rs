@@ -157,7 +157,7 @@ fn model(provider: &str, id: &str, name: &str, efforts: Vec<String>) -> Model {
             })
             .collect(),
         default_effort: None,
-        can_serve: provider != "agy",
+        can_serve: true,
         streaming: if matches!(provider, "claude" | "qoder") {
             "incremental"
         } else {
@@ -245,35 +245,17 @@ async fn structured_models(provider: &str) -> Result<Vec<Model>, String> {
     .await
     .map_err(|_| "Model discovery timed out".to_string())?
 }
-async fn agy_models() -> Result<Vec<Model>, String> {
-    let (success, text) = crate::process::capture("agy", &["models"]).await?;
-    if !success {
-        return Err("AGY model discovery failed".into());
-    }
-    Ok(text
-        .lines()
-        .filter_map(|line| line.split_once('\t'))
-        .filter(|(id, _)| !id.is_empty() && !id.contains(' '))
-        .map(|(id, name)| model("agy", id, name, vec![]))
-        .collect())
-}
 pub async fn list() -> Catalog {
-    let (codex, claude, agy, qoder) = tokio::join!(
+    let (codex, claude, qoder) = tokio::join!(
         codex_models(),
         structured_models("claude"),
-        agy_models(),
         structured_models("qoder")
     );
     let mut catalog = Catalog {
         models: vec![],
         warnings: vec![],
     };
-    for (provider, result) in [
-        ("Codex", codex),
-        ("Claude Code", claude),
-        ("AGY", agy),
-        ("Qoder", qoder),
-    ] {
+    for (provider, result) in [("Codex", codex), ("Claude Code", claude), ("Qoder", qoder)] {
         match result {
             Ok(models) => catalog.models.extend(models),
             Err(message) => catalog.warnings.push(format!("{provider}: {message}")),
@@ -309,7 +291,7 @@ mod tests {
             );
         }
         let catalog = list().await;
-        for provider in ["codex", "claude", "agy", "qoder"] {
+        for provider in ["codex", "claude", "qoder"] {
             println!(
                 "{provider}: {} models; first={}",
                 catalog

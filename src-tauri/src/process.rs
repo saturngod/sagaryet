@@ -33,7 +33,6 @@ pub fn directories() -> Vec<PathBuf> {
         #[cfg(windows)]
         {
             dirs.push(home.join("AppData/Roaming/npm"));
-            dirs.push(home.join("AppData/Local/agy/bin"));
         }
     }
     dirs.extend([
@@ -48,7 +47,6 @@ pub fn executable(provider: &str) -> Option<PathBuf> {
     let names: &[&str] = match provider {
         "codex" => &["codex"],
         "claude" => &["claude"],
-        "agy" => &["agy"],
         "qoder" => &["qodercli", "qoder"],
         _ => return None,
     };
