@@ -139,3 +139,23 @@ authentication, adversarial tool/hook/extension checks, LAN isolation and phone
 streaming verification, OS credential-store integration, packaged
 signing/notarization and verified Windows/Linux/mobile-client combinations.
 This build must not be advertised as release-complete.
+
+## Prepare a release
+
+Update and validate all four version files with one command:
+
+```sh
+bun run release 0.1.1
+```
+
+This synchronizes `package.json`, `src-tauri/tauri.conf.json`,
+`src-tauri/Cargo.toml`, and the `sagaryet` entry in `src-tauri/Cargo.lock`.
+It accepts `0.1.1` or `v0.1.1` and does not commit, tag, or push.
+Commit the prepared changes before creating and pushing the matching version tag.
+If a failed tag already exists, it still points to the old commit; rerunning its
+workflow does not include the updated version files.
+
+For a new, unused version tag, the existing `bun run release:tag -- 0.1.2`
+helper updates the versions, commits the version files, and creates a local
+annotated tag. Commit unrelated changes first. Push the branch and tag when ready;
+only a pushed `v*` tag starts GitHub builds.

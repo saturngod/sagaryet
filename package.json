@@ -1,7 +1,7 @@
 {
   "name": "sagaryet",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,6 +14,7 @@
     "icons": "bun scripts/generate-icons.ts",
     "version:check": "bun scripts/release-version.ts check",
     "version:set": "bun scripts/release-version.ts set",
+    "release": "bun scripts/release-version.ts release",
     "release:tag": "bun scripts/release-version.ts tag"
   },
   "dependencies": {

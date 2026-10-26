@@ -6,10 +6,12 @@
 //
 // Usage (from the repo root):
 //   bun scripts/release-version.ts check [--tag v0.1.4] [--ref <git-ref>]
+//   bun scripts/release-version.ts release <0.1.4 | v0.1.4>
 //   bun scripts/release-version.ts set <0.1.4 | v0.1.4>
 //   bun scripts/release-version.ts tag <0.1.4 | v0.1.4> [-m "version 0.1.4"]
 //
 // Or via package scripts:
+//   bun run release 0.1.4
 //   bun run version:check
 //   bun run version:set -- 0.1.4
 //   bun run release:tag -- 0.1.4 -m "version 0.1.4"
@@ -42,6 +44,7 @@ function fail(message: string): never {
 function usage(): never {
   console.error(`usage:
   bun scripts/release-version.ts check [--tag v0.1.4] [--ref <git-ref>]
+  bun scripts/release-version.ts release <0.1.4 | v0.1.4>
   bun scripts/release-version.ts set <0.1.4 | v0.1.4>
   bun scripts/release-version.ts tag <0.1.4 | v0.1.4> [-m "version 0.1.4"]`);
   process.exit(1);
@@ -50,6 +53,7 @@ function usage(): never {
 function help(): never {
   console.log(`usage:
   bun scripts/release-version.ts check [--tag v0.1.4] [--ref <git-ref>]
+  bun scripts/release-version.ts release <0.1.4 | v0.1.4>
   bun scripts/release-version.ts set <0.1.4 | v0.1.4>
   bun scripts/release-version.ts tag <0.1.4 | v0.1.4> [-m "version 0.1.4"]`);
   process.exit(0);
@@ -339,6 +343,20 @@ function cmdSet(rawArgs: string[]): void {
   updateCargoLock(version);
 }
 
+/** Prepare release files without changing Git history or an existing release tag. */
+function cmdRelease(rawArgs: string[]): void {
+  const args = [...rawArgs];
+  rejectFlags(args);
+  if (args.length !== 1) usage();
+  const version = normalizeVersion(args[0]);
+  // Require every release file before making any edits.
+  for (const path of VERSION_FILES) readWorktree(path);
+  loadVersions(undefined);
+  cmdSet([version]);
+  cmdCheck(["--tag", `v${version}`]);
+  console.log(`Release ${version} prepared. Commit the changes before creating or updating its Git tag.`);
+}
+
 function cmdTag(rawArgs: string[]): void {
   const args = [...rawArgs];
   const message = takeFlag(args, "-m", "--message");
@@ -402,6 +420,7 @@ function cmdTag(rawArgs: string[]): void {
 
 const [command, ...rest] = process.argv.slice(2);
 if (command === "check") cmdCheck(rest);
+else if (command === "release") cmdRelease(rest);
 else if (command === "set") cmdSet(rest);
 else if (command === "tag") cmdTag(rest);
 else if (command === "--help" || command === "-h" || command === "help") help();
