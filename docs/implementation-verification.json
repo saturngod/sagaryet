@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-25",
+  "platform": "macOS",
+  "release_complete": false,
+  "lan_enabled": true,
+  "providers": {
+    "codex": {
+      "models": 7,
+      "authentication": "reported_authenticated",
+      "live_generation": "passed",
+      "http_history": "passed"
+    },
+    "claude": {
+      "models": 5,
+      "authentication": "reported_authenticated",
+      "live_generation": "authentication_required"
+    },
+    "agy": {
+      "models": 6,
+      "authentication": "unknown",
+      "live_generation": "not_run_isolation_unverified"
+    },
+    "qoder": {
+      "models": 15,
+      "authentication": "reported_authenticated",
+      "live_generation": "passed_isolated_config",
+      "observed_answer_events": 276,
+      "streaming": "incremental",
+      "streaming_verified_date": "2026-10-26",
+      "first_text_ms": 7599,
+      "completion_ms": 10257
+    }
+  },
+  "unverified": [
+    "AGY text-only isolation",
+    "adversarial hooks/plugins/tool tests",
+    "LAN and real phone",
+    "Windows and Linux builds",
+    "signed distribution",
+    "OS credential storage"
+  ],
+  "checks": {
+    "frontend_build": "passed",
+    "rust_tests": {
+      "passed": 12,
+      "ignored_opt_in_live": 4,
+      "ignored_lan_reachability": "passed"
+    },
+    "python_tests": {
+      "passed": 8
+    },
+    "clippy_warnings_denied": "passed",
+    "macos_release_binary": "passed",
+    "macos_app_bundle": "passed",
+    "native_ui": "passed_launch_discovery_layout_and_four_provider_picker",
+    "terminal_all_cli_checks": "passed_all_four_runnable_codex_claude_qoder_login_detected_agy_auth_unknown",
+    "native_cli_overview": "passed_all_four_runnable_login_states_and_model_counts_visible"
+  }
+}

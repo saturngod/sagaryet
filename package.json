@@ -1,0 +1,33 @@
+{
+  "name": "sagaryet",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "test": "python3 -m unittest discover -s tests -v && cargo test --manifest-path src-tauri/Cargo.toml",
+    "probe:clis": "python3 scripts/probe_clis.py",
+    "check:clis": "python3 scripts/check_connections.py",
+    "icons": "bun scripts/generate-icons.ts",
+    "version:check": "bun scripts/release-version.ts check",
+    "version:set": "bun scripts/release-version.ts set",
+    "release:tag": "bun scripts/release-version.ts tag"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@tauri-apps/api": "^2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^6.0.2",
+    "sharp": "^0.35.5",
+    "typescript": "~6.0.3",
+    "vite": "^8.0.16"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find src src-tauri/src -type f | head -50)",
+      "Bash(grep -n \"lanUrls\\\\|lan_urls\\\\|network\" src/App.tsx src/App.css tests/* 2>/dev/null | head -40)",
+      "Bash(grep -n -i \"lan\\\\|phone\\\\|interface\" docs/implementation-verification.json | head -30; grep -rn \"lan\" package.json scripts tests src-tauri/src 2>/dev/null | head -40)",
+      "Bash(cargo add if-addrs --manifest-path src-tauri/Cargo.toml 2>&1 | tail -20)"
+    ]
+  }
+}

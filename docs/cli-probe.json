@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "platform": "darwin",
+  "providers": {
+    "codex": {
+      "installed": true,
+      "lan_ready": false,
+      "version": [
+        "codex-cli 0.163.0"
+      ],
+      "version_exit_code": 0,
+      "help_exit_code": 0,
+      "advertised_flags": [
+        "--sandbox",
+        "--model"
+      ],
+      "live_status": "not_run",
+      "app_server": {
+        "initialized": true,
+        "model_count": 7,
+        "protocol_errors": 0,
+        "exit_code": 0,
+        "termination": null
+      }
+    },
+    "claude": {
+      "installed": true,
+      "lan_ready": false,
+      "version": [
+        "2.1.296 (Claude Code)"
+      ],
+      "version_exit_code": 0,
+      "help_exit_code": 0,
+      "advertised_flags": [
+        "--tools",
+        "--safe-mode",
+        "--input-format",
+        "--output-format",
+        "--include-partial-messages",
+        "--strict-mcp-config",
+        "--no-session-persistence",
+        "--model",
+        "--effort"
+      ],
+      "live_status": "failed_or_unavailable",
+      "live": {
+        "exit_code": 1,
+        "termination": null,
+        "event_types": {
+          "system": 5,
+          "assistant": 1,
+          "result": 1
+        },
+        "text_delta_count": 0,
+        "successful_terminal": false,
+        "invalid_records": 0,
+        "failure_category": "authentication"
+      }
+    },
+    "agy": {
+      "installed": true,
+      "lan_ready": false,
+      "version": [
+        "1.4.7"
+      ],
+      "version_exit_code": 0,
+      "help_exit_code": 0,
+      "advertised_flags": [
+        "--sandbox",
+        "--input-format",
+        "--output-format",
+        "--model",
+        "--effort"
+      ],
+      "live_status": "not_run"
+    },
+    "qoder": {
+      "installed": true,
+      "lan_ready": false,
+      "version": [
+        "1.1.78"
+      ],
+      "version_exit_code": 0,
+      "help_exit_code": 0,
+      "advertised_flags": [
+        "--model",
+        "--reasoning-effort"
+      ],
+      "live_status": "not_run"
+    }
+  }
+}
