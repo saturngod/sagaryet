@@ -140,22 +140,36 @@ streaming verification, OS credential-store integration, packaged
 signing/notarization and verified Windows/Linux/mobile-client combinations.
 This build must not be advertised as release-complete.
 
-## Prepare a release
+## Release
 
-Update and validate all four version files with one command:
+Publish a new version with one command (use an unused version number):
 
 ```sh
-bun run release 0.1.1
+bun run release 0.1.4
 ```
 
-This synchronizes `package.json`, `src-tauri/tauri.conf.json`,
+This synchronizes and validates `package.json`, `src-tauri/tauri.conf.json`,
 `src-tauri/Cargo.toml`, and the `sagaryet` entry in `src-tauri/Cargo.lock`.
-It accepts `0.1.1` or `v0.1.1` and does not commit, tag, or push.
-Commit the prepared changes before creating and pushing the matching version tag.
-If a failed tag already exists, it still points to the old commit; rerunning its
-workflow does not include the updated version files.
+It then runs `git add --all`, commits all pending changes with
+`chore(release): v0.1.4`, creates an annotated tag, and atomically pushes the
+current branch and tag to `origin`. Review your pending changes first, including
+untracked files. Only pushed `v*` tags start GitHub builds.
 
-For a new, unused version tag, the existing `bun run release:tag -- 0.1.2`
-helper updates the versions, commits the version files, and creates a local
-annotated tag. Commit unrelated changes first. Push the branch and tag when ready;
-only a pushed `v*` tag starts GitHub builds.
+The command accepts a version with or without the `v` prefix. Existing local or
+remote tags are rejected before any files change by default. To repair a failed
+release whose tag points to the wrong version, explicitly replace that tag:
+
+```sh
+bun run release 0.1.3 --replace-tag
+```
+
+This commits all current changes, recreates the tag on the corrected commit,
+and atomically pushes the branch and tag. Replacement uses an explicit Git lease
+on the observed remote tag, so concurrent remote changes cause the push to fail.
+Use this for failed releases, not versions already distributed to users.
+If a push fails, the local commit and tag remain, and the command prints the
+Git push command to retry after resolving the problem.
+
+Use `bun run version:set -- 0.1.4` to update files without committing or pushing.
+The `release:tag` helper remains available for committing just the version files
+and creating a local tag without pushing.

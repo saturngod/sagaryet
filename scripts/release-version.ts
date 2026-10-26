@@ -6,7 +6,7 @@
 //
 // Usage (from the repo root):
 //   bun scripts/release-version.ts check [--tag v0.1.4] [--ref <git-ref>]
-//   bun scripts/release-version.ts release <0.1.4 | v0.1.4>
+//   bun scripts/release-version.ts release <0.1.4 | v0.1.4> [--replace-tag]
 //   bun scripts/release-version.ts set <0.1.4 | v0.1.4>
 //   bun scripts/release-version.ts tag <0.1.4 | v0.1.4> [-m "version 0.1.4"]
 //
@@ -44,7 +44,7 @@ function fail(message: string): never {
 function usage(): never {
   console.error(`usage:
   bun scripts/release-version.ts check [--tag v0.1.4] [--ref <git-ref>]
-  bun scripts/release-version.ts release <0.1.4 | v0.1.4>
+  bun scripts/release-version.ts release <0.1.4 | v0.1.4> [--replace-tag]
   bun scripts/release-version.ts set <0.1.4 | v0.1.4>
   bun scripts/release-version.ts tag <0.1.4 | v0.1.4> [-m "version 0.1.4"]`);
   process.exit(1);
@@ -53,7 +53,7 @@ function usage(): never {
 function help(): never {
   console.log(`usage:
   bun scripts/release-version.ts check [--tag v0.1.4] [--ref <git-ref>]
-  bun scripts/release-version.ts release <0.1.4 | v0.1.4>
+  bun scripts/release-version.ts release <0.1.4 | v0.1.4> [--replace-tag]
   bun scripts/release-version.ts set <0.1.4 | v0.1.4>
   bun scripts/release-version.ts tag <0.1.4 | v0.1.4> [-m "version 0.1.4"]`);
   process.exit(0);
@@ -343,18 +343,50 @@ function cmdSet(rawArgs: string[]): void {
   updateCargoLock(version);
 }
 
-/** Prepare release files without changing Git history or an existing release tag. */
+/** Update, commit all changes, tag, and publish a new release. */
 function cmdRelease(rawArgs: string[]): void {
   const args = [...rawArgs];
+  const replaceTag = args.includes("--replace-tag");
+  if (replaceTag) args.splice(args.indexOf("--replace-tag"), 1);
   rejectFlags(args);
   if (args.length !== 1) usage();
   const version = normalizeVersion(args[0]);
-  // Require every release file before making any edits.
+  const tag = `v${version}`;
+  const git = (args: string[]): string => {
+    const result = runGit(args);
+    if (result.code !== 0) fail(`git ${args[0]} failed: ${(result.err || result.out).trim()}`);
+    return result.out.trim();
+  };
+  const branch = git(["symbolic-ref", "--quiet", "--short", "HEAD"]);
+  if (!branch) fail("release requires a checked-out branch");
+  const localTag = runGit(["show-ref", "--verify", "--quiet", `refs/tags/${tag}`]).code === 0;
+  const remoteTag = git(["ls-remote", "--tags", "origin", `refs/tags/${tag}`]);
+  const remoteOid = remoteTag.split(/\s+/)[0] ?? "";
+  if ((localTag || remoteTag) && !replaceTag) {
+    fail(`tag ${tag} already exists${!localTag ? " on origin" : ""}. To repair a failed release, run bun run release ${version} --replace-tag; otherwise use a new version. No files or tags were changed.`);
+  }
+  // Validate every release file before staging or changing anything.
   for (const path of VERSION_FILES) readWorktree(path);
   loadVersions(undefined);
   cmdSet([version]);
-  cmdCheck(["--tag", `v${version}`]);
-  console.log(`Release ${version} prepared. Commit the changes before creating or updating its Git tag.`);
+  cmdCheck(["--tag", tag]);
+  git(["add", "--all"]);
+  const staged = runGit(["diff", "--cached", "--quiet"]);
+  if (staged.code === 1) {
+    git(["commit", "-m", `chore(release): ${tag}`]);
+  } else if (staged.code !== 0) {
+    fail(`cannot inspect staged changes: ${staged.err.trim()}`);
+  }
+  // Check the committed files as well, including any changes made by commit hooks.
+  cmdCheck(["--tag", tag, "--ref", "HEAD"]);
+  git(["tag", ...(replaceTag ? ["--force"] : []), "-a", tag, "-m", `version ${version}`]);
+  const lease = replaceTag ? [`--force-with-lease=refs/tags/${tag}:${remoteOid}`] : [];
+  const pushArgs = ["push", "--atomic", ...lease, "origin", `HEAD:refs/heads/${branch}`, `refs/tags/${tag}`];
+  const pushed = runGit(pushArgs);
+  if (pushed.code !== 0) {
+    fail(`push failed; the local commit and tag were retained. Fix the remote issue, then retry with git ${pushArgs.join(" ")}\n${(pushed.err || pushed.out).trim()}`);
+  }
+  console.log(`✓ committed changes and pushed ${branch} and ${tag} to origin`);
 }
 
 function cmdTag(rawArgs: string[]): void {
