@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "Sagaryet",
-        "width": 850,
-        "height": 940,
+        "width": 720,
+        "height": 760,
         "minWidth": 420,
         "minHeight": 640
       }

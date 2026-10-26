@@ -71,9 +71,10 @@ function App() {
           {cliOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
         </select></div>
         <div><label htmlFor="api-key">API key <span className="optional">Optional</span></label><input id="api-key" type="text" value={apiKey} disabled={locked} placeholder="Empty" autoComplete="off" spellCheck={false} onChange={event => setApiKey(event.target.value)} /></div>
+      <button className="primary" disabled={busy || (!status.running && (loading || !availableModels.length || !selectedProvider?.runnable || selectedProvider.authentication === "reported_signed_out"))} onClick={toggleServer}>{busy ? "Please wait…" : status.running ? "Stop server" : "Start server"}</button>
       </div>
       {!loading && !status.running && (!selectedProvider?.runnable || selectedProvider.authentication === "reported_signed_out" || !availableModels.length) && <p className="help">{!selectedProvider?.runnable ? `Install ${cliOptions.find(([id]) => id === provider)?.[1]} to continue.` : selectedProvider.authentication === "reported_signed_out" ? "Sign in to your CLI, then refresh." : "This CLI is not supported for serving models yet."}</p>}
-      <button className="primary" disabled={busy || (!status.running && (loading || !availableModels.length || !selectedProvider?.runnable || selectedProvider.authentication === "reported_signed_out"))} onClick={toggleServer}>{busy ? "Please wait…" : status.running ? "Stop server" : "Start server"}</button>
+
     </section>
 
     <section aria-labelledby="connection-title">
