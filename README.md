@@ -113,8 +113,10 @@ cargo test --manifest-path src-tauri/Cargo.toml installed_codex_http_history -- 
 
 See [plan](plan.md), [feasibility](docs/feasibility.md), and
 [verification evidence](docs/implementation-verification.json). GitHub Actions
-runs the same verification workflow for branch pushes, pull requests, manual runs,
-and release tags. It tests real HTTP sockets (health, authentication, JSON/SSE,
+runs verification and installer builds only when a version tag matching `v*`
+is pushed (for example, `v0.1.0`). Branch pushes, pull requests, and manual events
+do not start builds. The verification workflow is reusable and called by the
+release workflow after the tag version passes validation. It tests real HTTP sockets (health, authentication, JSON/SSE,
 queueing, cancellation, and stop/restart) without installed provider CLIs, then
 builds and uploads native installers:
 

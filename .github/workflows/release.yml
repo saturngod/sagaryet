@@ -1,7 +1,7 @@
 name: "release"
 
 # Only build when a version tag is pushed, e.g. `git tag v0.1.0 && git push origin v0.1.0`.
-# Branch pushes and PRs use verify.yml; this workflow publishes version tags.
+# Branch pushes, pull requests, and manual events do not start builds.
 "on":
   push:
     tags:
@@ -39,6 +39,7 @@ jobs:
         run: bun run build
 
   desktop-verification:
+    needs: validate
     uses: ./.github/workflows/verify.yml
 
   prepare-release:
