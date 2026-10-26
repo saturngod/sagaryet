@@ -886,6 +886,9 @@ mod tests {
             StatusCode::UNAUTHORIZED
         );
         controller.stop().await;
+        // The restarted server may reuse the same port. Do not reuse pooled
+        // connections that belonged to the stopped server.
+        let client = reqwest::Client::new();
         let open = controller
             .start_configured(0, Some(String::new()), "synthetic/test", None)
             .await

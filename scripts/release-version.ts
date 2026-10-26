@@ -272,7 +272,7 @@ function updateCargoToml(version: string): boolean {
       continue;
     }
     if (!inPackage) continue;
-    const m = lines[i].match(/^(\s*version\s*=\s*")[^"]*(".*)$/);
+    const m = lines[i].match(/^(\s*version\s*=\s*")[^"]*("[^\n]*)$/);
     if (m) {
       if (lines[i].includes(`"${version}"`)) {
         console.log(`  = ${CARGO_TOML} already ${version}`);
@@ -310,7 +310,7 @@ function updateCargoLock(version: string): boolean {
       name = nm[1];
       continue;
     }
-    const vm = lines[i].match(/^(\s*version\s*=\s*")[^"]*(".*)$/);
+    const vm = lines[i].match(/^(\s*version\s*=\s*")[^"]*("[^\n]*)$/);
     if (vm) {
       if (name !== "sagaryet") {
         inBlock = false;

@@ -62,6 +62,19 @@ class ReleaseVersionTests(unittest.TestCase):
         self.assertEqual(self.git("show", "HEAD:new-file.txt"), "Include untracked changes")
         self.assertEqual(json.loads((self.root / "package.json").read_text())["version"], "0.2.4")
 
+    def test_release_preserves_crlf_cargo_files(self):
+        for name in FILES[2:]:
+            path = self.root / name
+            path.write_bytes(path.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+        result = self.run_command("run", "release", "0.2.3")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        for name in FILES[2:]:
+            content = (self.root / name).read_bytes()
+            self.assertIn(b'version = "0.2.3"\r\n', content)
+            self.assertNotIn(b"\n", content.replace(b"\r\n", b""))
+        result = self.run_command("scripts/release-version.ts", "check", "--tag", "v0.2.3", "--ref", "v0.2.3")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_existing_local_or_remote_tag_fails_before_changes(self):
         before = self.snapshot()
         head = self.git("rev-parse", "HEAD")
