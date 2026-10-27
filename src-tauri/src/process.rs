@@ -20,6 +20,7 @@ pub fn directories() -> Vec<PathBuf> {
             ".bun/bin",
             ".volta/bin",
             ".qoder/entry",
+            ".opencode/bin",
             "bin",
         ] {
             dirs.push(home.join(path));
@@ -48,6 +49,7 @@ pub fn executable(provider: &str) -> Option<PathBuf> {
         "codex" => &["codex"],
         "claude" => &["claude"],
         "qoder" => &["qodercli", "qoder"],
+        "opencode" => &["opencode"],
         _ => return None,
     };
     for name in names {

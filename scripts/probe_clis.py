@@ -14,7 +14,7 @@ import time
 
 LIMIT = 1024 * 1024
 PROVIDERS = {"codex": ["codex"], "claude": ["claude"],
-             "qoder": ["qodercli", "qoder"]}
+             "qoder": ["qodercli", "qoder"], "opencode": ["opencode"]}
 
 
 def terminate(process):

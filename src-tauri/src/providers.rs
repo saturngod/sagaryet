@@ -10,6 +10,7 @@ pub struct Provider {
     pub runnable: bool,
     pub version: Option<String>,
     pub authentication: String,
+    pub credential_listing: &'static str,
     pub generation: &'static str,
     pub message: String,
 }
@@ -23,6 +24,7 @@ async fn check(id: &str, name: &str) -> Provider {
         runnable: false,
         version: None,
         authentication: "not_checked".into(),
+        credential_listing: "not_checked",
         generation: "not_tested",
         message: "CLI not found".into(),
     };
@@ -69,6 +71,15 @@ async fn check(id: &str, name: &str) -> Provider {
         }
         .into();
     }
+    if id == "opencode" {
+        result.credential_listing = if crate::opencode::credential_listing().await.is_ok() {
+            "available"
+        } else {
+            "failed"
+        };
+        result.message = "Select a provider/model and test its connection; saved credentials do not prove access".into();
+        return result;
+    }
     result.message = match result.authentication.as_str() {
         "reported_authenticated" => "Login detected · Live connection not tested",
         "reported_signed_out" => "Sign-in required",
@@ -78,10 +89,11 @@ async fn check(id: &str, name: &str) -> Provider {
     result
 }
 pub async fn list() -> Vec<Provider> {
-    let (a, b, c) = tokio::join!(
+    let (a, b, c, d) = tokio::join!(
         check("codex", "Codex"),
         check("claude", "Claude Code"),
-        check("qoder", "Qoder")
+        check("qoder", "Qoder"),
+        check("opencode", "OpenCode")
     );
-    vec![a, b, c]
+    vec![a, b, c, d]
 }

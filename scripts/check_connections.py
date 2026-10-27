@@ -8,6 +8,8 @@ from probe_clis import PROVIDERS, run
 
 
 def authentication(provider, success, stdout):
+    if provider == "opencode":
+        return "unknown"
     if provider == "codex":
         return "reported_authenticated" if success else "unknown"
     try:
@@ -24,10 +26,16 @@ def authentication(provider, success, stdout):
     return "unknown"
 
 
+def parse_opencode_models(text):
+    import re
+    return list(dict.fromkeys(line.strip() for line in text.splitlines()
+                             if re.fullmatch(r"[^\s/]+/[^\s]+", line.strip()) and len(line.strip()) <= 400))
+
+
 def check(provider, aliases, cwd):
     executable = next((shutil.which(alias) for alias in aliases if shutil.which(alias)), None)
     result = dict(provider=provider, executable=executable, installed=bool(executable),
-                  runnable=False, version=None, authentication="not_checked", generation="not_tested")
+                  runnable=False, version=None, authentication="not_checked", generation="not_tested", credential_listing="not_checked")
     if not executable:
         return result
     try:
@@ -38,6 +46,23 @@ def check(provider, aliases, cwd):
             return result
         lines = (version["stdout"] or version["stderr"]).splitlines()
         result["version"] = next((line.strip()[:160] for line in lines if line.strip()), None)
+        if provider == "opencode":
+            # Only report command availability. Never persist account-bearing output.
+            try:
+                auth = run([executable, "auth", "list"], cwd, timeout=20)
+                result["credential_listing"] = "available" if auth["exit_code"] == 0 and not auth["termination"] else "failed"
+            except (OSError, TimeoutError, subprocess.SubprocessError):
+                result["credential_listing"] = "failed"
+            catalog = run([executable, "models"], cwd, timeout=20)
+            result["models"] = parse_opencode_models(catalog["stdout"]) if catalog["exit_code"] == 0 and not catalog["termination"] else []
+            result["authentication"] = "unknown"
+            if catalog["exit_code"] != 0 or catalog["termination"]:
+                result["message"] = "OpenCode can start, but model discovery failed"
+            elif not result["models"]:
+                result["message"] = "No model IDs were recognized; check the CLI version/configuration"
+            else:
+                result["message"] = "Select a provider/model and test its connection; discovery does not prove access"
+            return result
         args = {"codex": ["login", "status"], "claude": ["auth", "status"],
                 "qoder": ["status", "--output", "json"]}.get(provider)
         result["authentication"] = "unknown"

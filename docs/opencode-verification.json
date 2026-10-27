@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-26",
+  "platform": "macOS",
+  "cli_version": "2.0.32",
+  "isolated_metadata": "passed",
+  "models_discovered": 12,
+  "selected_model": "opencode/opencode/big-pickle",
+  "synthetic_generation": "quota_exhausted",
+  "live_generation_verified": false,
+  "remaining": [
+    "successful selected-model live response",
+    "adversarial installed-provider isolation matrix",
+    "Windows and Linux execution and cancellation",
+    "real phone streaming"
+  ],
+  "checks": {
+    "frontend_build": "passed",
+    "python_tests_passed": 16,
+    "rust_tests_passed": 23,
+    "rust_tests_ignored_opt_in": 7,
+    "rust_format": "passed",
+    "clippy_warnings_denied": "passed",
+    "version_check": "passed",
+    "native_ui": "not_run",
+    "Windows_Linux": "not_run"
+  }
+}

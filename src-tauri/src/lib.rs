@@ -1,9 +1,29 @@
 mod adapter;
 mod catalog;
+mod opencode;
 mod process;
 mod providers;
 mod server;
 use server::{Controller, Status};
+use tauri::Manager;
+
+struct ConnectionChecks {
+    cancel: tokio::sync::watch::Sender<u64>,
+    slot: tokio::sync::Semaphore,
+}
+impl Default for ConnectionChecks {
+    fn default() -> Self {
+        Self {
+            cancel: tokio::sync::watch::channel(0).0,
+            slot: tokio::sync::Semaphore::new(1),
+        }
+    }
+}
+impl ConnectionChecks {
+    fn cancel(&self) {
+        self.cancel.send_modify(|n| *n = n.wrapping_add(1));
+    }
+}
 
 #[tauri::command]
 async fn server_status(state: tauri::State<'_, Controller>) -> Result<Status, String> {
@@ -32,6 +52,22 @@ async fn list_providers() -> Vec<providers::Provider> {
 
 #[tauri::command]
 async fn test_connection(
+    checks: tauri::State<'_, ConnectionChecks>,
+    model: String,
+    reasoning_effort: Option<String>,
+) -> Result<serde_json::Value, String> {
+    let _permit = checks
+        .slot
+        .try_acquire()
+        .map_err(|_| "A connection test is already running")?;
+    let mut cancel = checks.cancel.subscribe();
+    tokio::select! {
+        _ = cancel.changed() => Err("cancelled".into()),
+        result = check_connection(model, reasoning_effort) => result,
+    }
+}
+
+async fn check_connection(
     model: String,
     reasoning_effort: Option<String>,
 ) -> Result<serde_json::Value, String> {
@@ -78,9 +114,18 @@ fn generate_api_key() -> String {
     server::generate_key()
 }
 #[tauri::command]
-async fn stop_server(state: tauri::State<'_, Controller>) -> Result<Status, String> {
+async fn stop_server(
+    checks: tauri::State<'_, ConnectionChecks>,
+    state: tauri::State<'_, Controller>,
+) -> Result<Status, String> {
+    checks.cancel();
     Ok(state.stop().await)
 }
+#[tauri::command]
+fn cancel_connection_test(checks: tauri::State<'_, ConnectionChecks>) {
+    checks.cancel();
+}
+
 #[tauri::command]
 async fn cancel_requests(state: tauri::State<'_, Controller>) -> Result<(), String> {
     state.cancel().await;
@@ -96,6 +141,7 @@ async fn rotate_key(state: tauri::State<'_, Controller>) -> Result<Status, Strin
 pub fn run() {
     tauri::Builder::default()
         .manage(Controller::default())
+        .manage(ConnectionChecks::default())
         .invoke_handler(tauri::generate_handler![
             server_status,
             start_server,
@@ -104,9 +150,19 @@ pub fn run() {
             list_models,
             list_providers,
             test_connection,
+            cancel_connection_test,
             cancel_requests,
             generate_api_key
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Sagaryet");
+        .build(tauri::generate_context!())
+        .expect("error while building Sagaryet")
+        .run(|app, event| {
+            if matches!(
+                event,
+                tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit
+            ) {
+                app.state::<ConnectionChecks>().cancel();
+                tauri::async_runtime::block_on(app.state::<Controller>().stop());
+            }
+        });
 }

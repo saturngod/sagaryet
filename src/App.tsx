@@ -4,29 +4,32 @@ import "./App.css";
 
 type Model = { id: string; name: string; provider: string; canServe: boolean };
 type Catalog = { models: Model[]; warnings: string[] };
-type Provider = { id: string; name: string; runnable: boolean; authentication: string };
+type Provider = { id: string; name: string; runnable: boolean; authentication: string; credentialListing: string; message: string };
 type Status = { running: boolean; baseUrl: string | null; accessKey: string | null; provider: string; model: string; lanUrls: string[] };
-const cliOptions = [["codex", "Codex"], ["claude", "Claude Code"], ["qoder", "Qoder"]] as const;
+const cliOptions = [["codex", "Codex"], ["claude", "Claude Code"], ["qoder", "Qoder"], ["opencode", "OpenCode"]] as const;
 
 function App() {
   const [status, setStatus] = useState<Status>({ running: false, baseUrl: null, accessKey: null, provider: "codex", model: "", lanUrls: [] });
   const [models, setModels] = useState<Model[]>([]);
+  const [catalogWarnings, setCatalogWarnings] = useState<string[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [provider, setProvider] = useState("codex");
   const [apiKey, setApiKey] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [testingModel, setTestingModel] = useState<string | null>(null);
+  const [connectionResults, setConnectionResults] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
-  const locked = status.running || busy;
+  const locked = status.running || busy || testingModel !== null;
   const availableModels = models.filter(model => model.provider === provider && model.canServe);
   const selectedProvider = providers.find(item => item.id === provider);
 
   async function refreshModels() {
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setConnectionResults({});
     try {
       const [catalog, items] = await Promise.all([invoke<Catalog>("list_models"), invoke<Provider[]>("list_providers")]);
-      setModels(catalog.models); setProviders(items);
+      setModels(catalog.models); setProviders(items); setCatalogWarnings(catalog.warnings.filter(warning => warning.startsWith("OpenCode:")));
     } catch { setError("Could not find your CLIs. Please try again."); }
     finally { setLoading(false); }
   }
@@ -54,6 +57,17 @@ function App() {
       setStatus(next);
     } catch (e) { setError(`Could not ${status.running ? "stop" : "start"} the server. ${String(e)}`); }
     finally { setBusy(false); }
+  }
+
+  async function testConnection(model: string) {
+    setTestingModel(model); setError("");
+    try {
+      await invoke("test_connection", { model, reasoningEffort: null });
+      setConnectionResults(results => ({ ...results, [model]: "Ready · Successful response received" }));
+    } catch (error) {
+      if (error === "cancelled") { setConnectionResults(results => ({ ...results, [model]: "Test cancelled" })); return; }
+      setConnectionResults(results => ({ ...results, [model]: "Connection failed · Check this provider’s credentials, access, and quota" }));
+    } finally { setTestingModel(null); }
   }
 
   async function copy(value: string, label: string) {
@@ -86,9 +100,12 @@ function App() {
     </section>
 
     <section aria-labelledby="models-title">
-      <div className="section-heading"><h2 id="models-title">Available models</h2>{!status.running && <button className="text-button" disabled={loading || busy} onClick={refreshModels}>{loading ? "Refreshing…" : "Refresh"}</button>}</div>
+      <div className="section-heading"><h2 id="models-title">Available models</h2>{!status.running && <button className="text-button" disabled={loading || busy || testingModel !== null} onClick={refreshModels}>{loading ? "Refreshing…" : "Refresh"}</button>}</div>
+      {testingModel && <button className="text-button" onClick={() => invoke("cancel_connection_test").catch(() => setError("Could not cancel the test."))}>Cancel test</button>}
+      {provider === "opencode" && catalogWarnings.map(warning => <p className="help" key={warning}>{warning}</p>)}
+      {provider === "opencode" && <p className="help">OpenCode v2 · {selectedProvider?.credentialListing === "available" ? "Credential listing available." : selectedProvider?.credentialListing === "failed" ? "Credential listing unavailable." : "Checking credentials…"} Each model uses its own provider account. API keys and local providers are supported; subscription logins aren’t imported. Test connection may consume quota.</p>}
       <p className="help model-help">Choose any of these models in your AI app. The API lists all available models for this CLI.</p>
-      {loading && !models.length ? <p className="empty">Loading models…</p> : availableModels.length ? <div className="model-list" aria-label="Available models">{availableModels.map(model => <div className="active-model" key={model.id}><div><strong>{model.name}</strong><code>{model.id}</code></div><button className="copy" onClick={() => copy(model.id, "Model name")}>Copy</button></div>)}</div> : <p className="empty">No models available.</p>}
+      {loading && !models.length ? <p className="empty">Loading models…</p> : availableModels.length ? <div className="model-list" aria-label="Available models">{availableModels.map(model => <div className="active-model" key={model.id}><div><strong>{model.name}</strong><code>{model.id}</code>{connectionResults[model.id] && <span className="help" role="status">{connectionResults[model.id]}</span>}</div>{provider === "opencode" && <button className="copy" disabled={testingModel !== null || busy || loading} onClick={() => testConnection(model.id)}>{testingModel === model.id ? "Testing…" : "Test connection"}</button>}<button className="copy" onClick={() => copy(model.id, "Model name")}>Copy</button></div>)}</div> : <p className="empty">No models available.</p>}
     </section>
 
     <details><summary>API keys & fields</summary><p className="help">For apps that ask for API settings or request fields.</p><dl className="api-fields"><div><dt>base_url</dt><dd>{status.baseUrl || "Shown when the server starts"}</dd></div><div><dt>api_key</dt><dd>{apiKey ? "Your API key above" : "Empty"}</dd></div><div><dt>model</dt><dd>Any model ID from the available models list</dd></div><div><dt>messages</dt><dd>Required · Your conversation</dd></div><div><dt>stream</dt><dd>Optional · true or false</dd></div></dl></details>

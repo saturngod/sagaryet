@@ -1,6 +1,8 @@
-**Sagaryet will be a separate desktop app that turns an installed AI CLI into an OpenAI-compatible server.** You select Codex, Claude Code, or Qoder, start the server, and enter Sagaryet’s URL and access key into your mobile AI app.
+**Sagaryet will be a separate desktop app that turns an installed AI CLI into an OpenAI-compatible server.** You select Codex, Claude Code, Qoder, or OpenCode, start the server, and enter Sagaryet’s URL and access key into your mobile AI app.
 
 AGY support was removed on 2026-10-26 at the project owner’s request due to terms-of-service concerns. It is outside the implementation and release scope.
+
+OpenCode follow-up — October 26, 2026: v2 native API adapter, isolated metadata discovery, model variants, model-specific connection tests and socket tests implemented. Installed v2.0.32 discovery passed; the selected-model synthetic request returned `quota_exhausted`. Successful live generation and the cross-platform/isolation matrix remain release gates.
 
 Implementation status — October 25, 2026: **in progress; localhost and LAN address display development slice implemented**. No Sagar files were changed.
 
@@ -58,7 +60,7 @@ The first release should provide:
 | Feature | Initial scope |
 |---|---|
 | Desktop systems | macOS, Windows, Linux |
-| CLI providers | Codex, Claude Code, Qoder |
+| CLI providers | Codex, Claude Code, Qoder, OpenCode v2 |
 | Active provider | One selected CLI at a time |
 | Client interface | OpenAI-compatible Chat Completions |
 | Responses | Streaming and non-streaming text |

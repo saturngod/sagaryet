@@ -246,16 +246,22 @@ async fn structured_models(provider: &str) -> Result<Vec<Model>, String> {
     .map_err(|_| "Model discovery timed out".to_string())?
 }
 pub async fn list() -> Catalog {
-    let (codex, claude, qoder) = tokio::join!(
+    let (codex, claude, qoder, opencode) = tokio::join!(
         codex_models(),
         structured_models("claude"),
-        structured_models("qoder")
+        structured_models("qoder"),
+        crate::opencode::models()
     );
     let mut catalog = Catalog {
         models: vec![],
         warnings: vec![],
     };
-    for (provider, result) in [("Codex", codex), ("Claude Code", claude), ("Qoder", qoder)] {
+    for (provider, result) in [
+        ("Codex", codex),
+        ("Claude Code", claude),
+        ("Qoder", qoder),
+        ("OpenCode", opencode),
+    ] {
         match result {
             Ok(models) => catalog.models.extend(models),
             Err(message) => catalog.warnings.push(format!("{provider}: {message}")),
@@ -291,7 +297,7 @@ mod tests {
             );
         }
         let catalog = list().await;
-        for provider in ["codex", "claude", "qoder"] {
+        for provider in ["codex", "claude", "qoder", "opencode"] {
             println!(
                 "{provider}: {} models; first={}",
                 catalog

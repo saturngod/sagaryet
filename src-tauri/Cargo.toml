@@ -30,9 +30,8 @@ subtle = "2"
 tempfile = "3"
 libc = "0.2"
 if-addrs = "0.15.0"
-
-[dev-dependencies]
-reqwest = { version = "0.12", default-features = false, features = ["json"] }
+rusqlite = { version = "0.41.0", features = ["bundled"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream"] }
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

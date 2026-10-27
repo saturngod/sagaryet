@@ -44,6 +44,7 @@ confuses a configured login with a successful AI response.
 | Codex | 7 models; native effort metadata | `login status` | Live adapter and HTTP multi-turn check passed |
 | Claude Code | 5 models; native effort metadata | `auth status` JSON | Adapter implemented; live check returned authentication failure |
 | Qoder | 15 models; native effort metadata | `status --output json` | Live check passed; incremental text streaming |
+| OpenCode v2 | Underlying provider/model IDs and variants | Credential listing only; no global auth verdict | Adapter implemented; selected-model live check required |
 
 These are recorded development results, not checks performed on your machine.
 Counts and account availability can change. A successful connection test applies
@@ -59,6 +60,62 @@ enabled and unencrypted, so set an access key before exposing the server to a ne
 
 AGY support has been removed at the project owner’s request due to terms-of-service concerns.
 
+## OpenCode
+
+Install OpenCode v2 separately and configure the underlying provider with its own
+API key, or use supported provider environment credentials/local model services.
+Sagaryet discovers the executable on PATH and in `~/.opencode/bin`. OpenCode v1
+is rejected with an upgrade warning because its configuration and event protocol
+are different. The installed version checked during development is v2.0.32.
+
+Select **OpenCode**, then use a model ID such as
+`opencode/PROVIDER/MODEL` in your AI client. Provider model IDs may themselves
+contain slashes. Native variants are exposed as supported `reasoning_effort`
+values. **Test connection** sends a small synthetic request through the same
+adapter used by HTTP chat; it may consume quota. Results belong to that exact
+model and only apply at the time of the test. **Cancel test**, Stop server,
+disconnect, timeout and app exit cancel the corresponding work.
+
+A successful `opencode --version` establishes that it can start. `opencode auth
+list` lists configured connections; `opencode models` lists a catalog. Neither
+proves valid credentials, quota, or generation readiness, and an empty saved
+account list does not prevent environment-backed or local models from working.
+The desktop uses the corresponding v2 native metadata endpoints in its isolated
+server; the terminal checker uses the CLI commands and parses plain model IDs.
+An unavailable credential listing does not itself disable generation.
+
+Each desktop metadata check or generation starts a private OpenCode server on
+`127.0.0.1` with a random password. Sagaryet verifies the effective configuration,
+active built-in plugin allowlist and agent tool denial before sending a prompt.
+OpenCode's native SSE is translated to text-only Chat Completions responses;
+reasoning is discarded, tool events fail the request, and a successful step plus
+successful execution are both required. The private server is killed with its
+process group and temporary files are removed on completion or cancellation.
+Only Sagaryet's existing HTTP endpoint is exposed to LAN clients.
+
+API keys are read from OpenCode's legacy `auth.json` or active v2 credential
+records using a read-only database connection, then copied into temporary state.
+Conversation databases, subscription OAuth credentials, remote configuration,
+user/project instructions, plugins, skills, MCP and custom provider packages are
+not imported. Provider configuration files and custom endpoints are currently
+excluded; the adapter uses OpenCode's built-in provider defaults and an allowlist
+of provider API-key/network environment variables. Managed system configuration
+causes a fail-closed isolation error. Sharing, updates, tools and persistent logs
+are disabled; OpenCode's temporary session database is removed at cleanup.
+
+The OpenCode CLI's [MIT license](https://github.com/anomalyco/opencode/blob/dev/LICENSE)
+permits integration; underlying model services retain their own terms. This does
+not establish permission to share subscriptions or proxy OpenCode's hosted/free
+inference offerings. Check the selected provider's terms and access conditions.
+Models that require tool-enabled coding requests may reject this text-only adapter;
+Sagaryet does not bypass that requirement.
+
+Recorded on 2026-10-26: isolated v2.0.32 metadata discovery passed with 12 models.
+A synthetic request to `opencode/opencode/big-pickle` returned the sanitized
+`quota_exhausted` category. No successful OpenCode live generation has been
+recorded for this integration. Synthetic socket tests verify streaming, failure
+handling and cancellation independently of installed providers.
+
 ## API compatibility
 
 | Feature | Behavior |
@@ -71,7 +128,7 @@ AGY support has been removed at the project owner’s request due to terms-of-se
 | `n` | Omitted or `1` |
 | `reasoning_effort` | Per-request supported effort; omit to use the provider default |
 | Other fields | Rejected, including tools, temperature, token limits and structured output |
-| Streaming | Incremental Codex/Claude/Qoder text deltas; `stream: true` returns OpenAI-compatible SSE |
+| Streaming | Incremental Codex/Claude/Qoder/OpenCode text deltas; `stream: true` returns OpenAI-compatible SSE |
 | SSE failure | Error payload, then close without successful finish or `[DONE]` |
 | Usage | Not exposed yet |
 | History | Fresh CLI session; conversation serialized as role/content JSON; hierarchy may differ from native APIs |
@@ -107,7 +164,7 @@ for working desktop commands.
 | `src/App.tsx`, `src/App.css` | Server setup, connection details and model list |
 | `src-tauri/src/lib.rs` | Tauri commands and application lifecycle |
 | `src-tauri/src/server.rs` | HTTP routes, validation, authentication, queues and streaming |
-| `src-tauri/src/adapter.rs` | Provider generation adapters and isolation |
+| `src-tauri/src/adapter.rs`, `opencode.rs` | Provider generation adapters and isolation |
 | `src-tauri/src/catalog.rs`, `providers.rs` | Model discovery and CLI login checks |
 | `src-tauri/src/process.rs` | Executable discovery, bounded child I/O and process cleanup |
 | `scripts/`, `tests/` | CLI probes, release tooling and Python tests |
@@ -131,9 +188,12 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D w
 bun run tauri build --no-bundle
 # Installed discovery, no inference:
 cargo test --manifest-path src-tauri/Cargo.toml installed_all_catalogs -- --ignored --nocapture
+# OpenCode v2 installed discovery, no inference:
+cargo test --manifest-path src-tauri/Cargo.toml installed_opencode_catalog -- --ignored --nocapture
 # Local network address reachability:
 cargo test --manifest-path src-tauri/Cargo.toml lan_address_serves_models -- --ignored --nocapture
 # Explicit live tests, consume quota:
+SAGARYET_TEST_MODEL=opencode/PROVIDER/MODEL cargo test --manifest-path src-tauri/Cargo.toml installed_opencode_connection -- --ignored --nocapture
 SAGARYET_TEST_MODEL=codex/gpt-5.6-sol cargo test --manifest-path src-tauri/Cargo.toml installed_live_connection -- --ignored --nocapture
 SAGARYET_TEST_MODEL=qoder/auto cargo test --manifest-path src-tauri/Cargo.toml installed_live_connection -- --ignored --nocapture
 cargo test --manifest-path src-tauri/Cargo.toml installed_codex_http_history -- --ignored --nocapture
@@ -164,7 +224,7 @@ Allow the app through the OS firewall for LAN clients; localhost needs no LAN ru
 Remote Windows/Linux results still need to be confirmed by running GitHub Actions.
 Windows batch-only CLI shims are currently rejected; a native executable is required.
 
-Remaining release gates include restoring Claude live
+Remaining release gates include successful OpenCode selected-model live generation, restoring Claude live
 authentication, adversarial tool/hook/extension checks, LAN isolation and phone
 streaming verification, OS credential-store integration, packaged
 signing/notarization and verified Windows/Linux/mobile-client combinations.

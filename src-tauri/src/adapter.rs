@@ -31,6 +31,9 @@ pub fn start(model: String, effort: Option<String>, messages: Vec<Message>) -> G
         let execution = async {
             let (provider, model) = model.split_once('/').ok_or("Invalid model")?;
             match provider {
+                "opencode" => {
+                    crate::opencode::generate(model, effort.as_deref(), &messages, &tx).await
+                }
                 "codex" => codex(model, effort.as_deref(), &messages, &tx).await,
                 "claude" | "qoder" => {
                     structured(provider, model, effort.as_deref(), &messages, &tx).await
@@ -97,7 +100,7 @@ pub fn classify(message: &str) -> String {
     }
     "provider_error".into()
 }
-fn prompt(messages: &[Message]) -> String {
+pub(crate) fn prompt(messages: &[Message]) -> String {
     // JSON escaping prevents accidental delimiters from changing message boundaries.
     serde_json::to_string(
         &messages
@@ -107,7 +110,7 @@ fn prompt(messages: &[Message]) -> String {
     )
     .unwrap_or_default()
 }
-fn instructions(messages: &[Message]) -> String {
+pub(crate) fn instructions(messages: &[Message]) -> String {
     format!(
         "You are a text chat assistant. The input is a JSON array of conversation messages with role and content fields. Continue the conversation by answering the final user message. Do not use tools.\n{}",
         messages
